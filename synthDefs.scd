@@ -55,11 +55,13 @@ SynthDef(\flanger, {
 }).add;
 
 SynthDef(\FM, {
-    arg freq = 440, mod=156,atk=0.01, rel=10, volume = 0.1, output = 0;
-    var sig, env;
-    sig = SinOsc.ar(SinOsc.ar(freq, 0,mod,0)!2);
+    arg freq = 440, ratio = 2, atk=0.01, rel=10, 
+    pos = 0, amp = 0.1, output = 0, index = 1;
+    var sig, mod,  env;
+    mod = SinOsc.ar(freq * ratio, mul:index);
+    sig = SinOsc.ar(freq, mod)!2;
     env = EnvGen.ar(Env (times:[atk,rel]),doneAction:2);
-    sig = Splay.ar(sig*volume*env)*0.5;
+    sig = Pan2.ar(sig*amp*env, pos)*0.5;
     Out.ar(output,sig);
 }).add;
 
