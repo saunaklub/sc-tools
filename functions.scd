@@ -5,6 +5,19 @@ if(~buffer == nil, ~buffer = IdentityDictionary());
 if(~bus == nil, ~bus = IdentityDictionary());
 if(~group == nil, ~group = IdentityDictionary());
 
+~makeCableDef = {
+    arg numChannels = 1;
+    SynthDef(\cable ++ numChannels.asSymbol, {
+        arg input, output, volume = 1;
+        Out.ar(output, In.ar(input, numChannels) * volume);
+    }).add;
+};
+
+20.do{
+    arg i;
+    ~makeCableDef.value(i+1);
+};
+
 ~getParentGroup = {
     arg node;
     var group = node.group;
@@ -29,7 +42,7 @@ if(~group == nil, ~group = IdentityDictionary());
 
     if(~buffer.at(name.asSymbol) == nil,
     {
-        ~buffer.put(name.asSymbol, 
+        ~buffer.put(name.asSymbol,
             Buffer.alloc(s, seconds * s.sampleRate, numChannels);
         )
     },{
@@ -38,7 +51,7 @@ if(~group == nil, ~group = IdentityDictionary());
 )};
 
 ~makeSynth = {
-    arg name, synthDef, arguments, 
+    arg name, synthDef, arguments,
     numInputs = 0, numOutputs = 1,
     target = nil, addAction = \addToTail,
     extraBusses;
@@ -67,7 +80,7 @@ if(~group == nil, ~group = IdentityDictionary());
         var busName = name ++ item.asSymbol;
         ~bus.put(busName.asSymbol, Bus.audio(s, numOutputs));
         ~synth[name.asSymbol].set(item.asSymbol, ~bus[busName.asSymbol]);
-        
+       
     }
 };
 
@@ -91,16 +104,16 @@ if(~group == nil, ~group = IdentityDictionary());
         var busName = name ++ item.asSymbol;
         ~bus.put(busName.asSymbol, Bus.audio(s, numOutputs));
         ~synth[name.asSymbol].set(item.asSymbol, ~bus[busName.asSymbol]);
-        
+       
     }
 };
 
 ~makeCable = {
     arg name, arguments, numChannels = 1, target = nil, addAction = \addToHead;
 
-    if (~synth[name.asSymbol] == nil, 
+    if (~synth[name.asSymbol] == nil,
     {
-        ~synth.put(name.asSymbol, 
+        ~synth.put(name.asSymbol,
             Synth(\cable ++ numChannels.asSymbol,
                 arguments.asArray, target: target,
                 addAction: addAction.asSymbol
@@ -143,7 +156,7 @@ if(~group == nil, ~group = IdentityDictionary());
     if(to.isInteger, {
         ~makeCable.value(cableName.asSymbol, [
             \input, bus,
-            \output, to], numChannels, 
+            \output, to], numChannels,
             target: ~group[cableGroup.asSymbol],
             addAction: \addToTail
         );
@@ -152,7 +165,7 @@ if(~group == nil, ~group = IdentityDictionary());
         ~makeCable.value(cableName.asSymbol, [
             \input, bus,
             \output, ~bus[output.asSymbol]
-        ], numChannels, 
+        ], numChannels,
         target: ~group[cableGroup.asSymbol],
         addAction: \addToTail);
 
@@ -181,18 +194,18 @@ if(~group == nil, ~group = IdentityDictionary());
     var cablename;
 
     ~synth[input.asSymbol].get(\output, {
-        arg i; 
+        arg i;
         (input.asString ++ "'s output is " ++ i.asString).postln;
     });
     ~synth[output.asSymbol].get(\input, {
-        arg i; 
+        arg i;
         (output.asString ++ "'s input is " ++ i.asString).postln;
     });
-    cablename = input.asSymbol ++ "->" ++ output.asSymbol; 
+    cablename = input.asSymbol ++ "->" ++ output.asSymbol;
 
     if(~synth.at(cablename.asSymbol) != nil) {
         ~synth.at(cablename.asSymbol).getn(0, 2, {
-            arg i; 
+            arg i;
             (input.asString ++ "->" ++ output.asString ++ " is connecting " ++
                 i[0].asString ++ " to " ++ i[1].asString).postln;
             }
