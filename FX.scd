@@ -1,7 +1,10 @@
-SynthDef(\stereoReverb, {
-    arg input, output, room = 0.7, damp = 0.3, volume = 1;
-    var sig = In.ar(input) * volume;
-    Out.ar(output, FreeVerb2.ar(sig,sig,1,room,damp));
+SynthDef(\chorus, {
+    arg input, output, depth,
+    amp = 1;
+    var sig, del, maxDelayTime = 0.1;
+    sig = In.ar(input, 1);
+    del = DelayC.ar(sig, maxDelayTime, min(depth, 1) * maxDelayTime);
+    Out.ar(output, [sig, del] * amp);
 }).add;
 
 SynthDef(\distortion, {
@@ -27,4 +30,17 @@ SynthDef(\flanger, {
         (delayTime + SinOsc.ar(rate,pi,depth));
     );
     Out.ar(output, (delayL + delayR)/2);
+}).add;
+
+SynthDef(\flanger2,{
+	arg input, output, modFreq, modIndex = 0.01,modIndexBus, delayTime = 0.1;
+	var sig = LeakDC.ar(In.ar(input,1));
+	var delay = DelayC.ar(sig, 1,delayTime + LinLin.ar(SinOsc.ar(modFreq * In.kr(modIndexBus,1)),-1,1, -1 * modIndex,modIndex));
+	Out.ar(output,(sig+delay)!2);
+}).add;
+
+SynthDef(\stereoReverb, {
+    arg input, output, room = 0.7, damp = 0.3, volume = 1;
+    var sig = In.ar(input) * volume;
+    Out.ar(output, FreeVerb2.ar(sig,sig,1,room,damp));
 }).add;
