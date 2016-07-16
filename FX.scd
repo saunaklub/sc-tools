@@ -44,3 +44,31 @@ SynthDef(\stereoReverb, {
     var sig = In.ar(input) * volume;
     Out.ar(output, FreeVerb2.ar(sig,sig,1,room,damp));
 }).add;
+
+SynthDef(\pitchShifter, {
+    arg rate = 1, window = 7500, output = 0,
+    bufNum = 0, delTapInput = 0;
+
+    var deltaT, delay1, delay2, 
+    trig, delTap, env1, env2, envelopePhase;
+
+    delTap = In.ar(delTapInput);
+
+    
+    rate = (1 - rate);
+    trig = Impulse.ar(SampleRate.ir/window * rate);
+    deltaT = Phasor.ar(trig, rate, 0, window - 1);
+    envelopePhase = (deltaT + 1)/window;
+
+    delay1 = DelTapRd.ar(bufNum, delTap, deltaT * SampleDur.ir, 2);
+    env1 = SinOsc.ar(0, mod(pi * envelopePhase, pi));
+
+    delay2 = DelTapRd.ar(bufNum, delTap, mod(window/2 + deltaT, window) * SampleDur.ir, 2);
+    env2 = SinOsc.ar(0, mod(0.5pi + (pi * envelopePhase), pi));
+
+
+    delay1 = delay1 * env1;
+    delay2 = delay2 * env2;
+
+    Out.ar(output, delay1 + delay2);
+}).add;
