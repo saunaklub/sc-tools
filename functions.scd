@@ -6,7 +6,6 @@ if(~buffer == nil, ~buffer = IdentityDictionary());
 if(~bus == nil, ~bus = IdentityDictionary());
 if(~group == nil, ~group = IdentityDictionary());
 
-NodeWatcher
 CmdPeriod.add(~synth);
 CmdPeriod.add(~cable);
 CmdPeriod.add(~buffer);
