@@ -18,7 +18,7 @@ CmdPeriod.add(~messagesToSend);
 
 ~getBusValue = {
 
-}
+};
 
 ~sendMessage = {
     arg receiver, address, message;
@@ -28,7 +28,7 @@ CmdPeriod.add(~messagesToSend);
 
 ~addMessage = {
     arg receiver, address, message, arguments;
-    var array = [receiver.AsSymbol, adress.asString, message, arguments.asArray];
+    var array = [receiver.asSymbol, address.asString, message, arguments.asArray];
 
     if(~messagesToSend.indexOf(array) == nil, {
         ~messagesToSend = ~messagesToSend.add(array);
@@ -65,7 +65,6 @@ CmdPeriod.add(~messagesToSend);
     };
 };
 
-~addFunctionMessage = {
-    ~addMessage
-}
-isFunction
+//~addFunctionMessage = {
+//    ~addMessage
+//};
