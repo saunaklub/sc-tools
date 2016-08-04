@@ -1,8 +1,3 @@
-SynthDef(\a2k, {
-    arg input, output;
-    Out.kr(output, A2K.kr(In.ar(input)));
-}).add;
-
 SynthDef(\envelopeFollower,{
     arg input, output, minThresh = 0.1, maxThresh = 0.6;
 
@@ -38,12 +33,4 @@ SynthDef(\pitchDetection, {
     var sig = In.ar(input);
     sig = Pitch.kr(sig);
     SendTrig.kr(sig[1], 0, sig[0]);
-}).add;
-
-SynthDef(\scale, {
-    arg input, output, minIn = 0, maxIn = 1, 
-    minOut = 0, maxOut = 1;
-    var sig = In.ar(input);
-    sig = LinLin.ar(sig, 0, 1, minIn, maxIn, minOut, maxOut);
-    Out.ar(output, sig);
 }).add;
