@@ -132,21 +132,28 @@ CmdPeriod.add(~clearUtilityDictionaries);
 };
 
 ~makeConversor = {
-    arg synthName, busName = \output, offset = 0;
+    arg synthName, busName = \output, offset = 0,
+    inMin = -1, inMax = 1, outMin = -1, outMax = 1,
+    curve = \linlin;
+
     var name = synthName ++ busName;
     
     if (~conversors[name.asSymbol] == nil, {
         ~makeBus.value(name, 1, \control);
 
-        ~conversors.put(name.asSymbol, Synth(\a2k,
+        ~conversors.put(name.asSymbol, Synth((\a2k ++ curve).asSymbol,
             [
                 \input, ~bus[name.asSymbol].subBus(offset, 1),
-                \output, ~controlBus[name.asSymbol]
+                \output, ~controlBus[name.asSymbol],
+                \inMin, inMin,
+                \inMax, inMax,
+                \outMin, outMin,
+                \outMax, outMax
             ],
             target: ~synth[synthName.asSymbol], addAction: \addAfter
         ));
     },
-    {"Conversor already exists!";});
+    {"Conversor already exists!".postln;});
 };
 
 ~makeCable = {

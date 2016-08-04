@@ -1,6 +1,6 @@
 // this file intends to send OSC messages to other applications
 "functions.scd".loadRelative;
-"analysis.scd".loadRelative;
+"conversion.scd".loadRelative;
 
 ~receivers = ~receiver ? IdentityDictionary();
 ~conversors = ~conversors ? IdentityDictionary();
@@ -26,9 +26,16 @@ CmdPeriod.add(~clearMappers);
 
 ~addValue = {
     arg receiver, address, synthName,
-    busName = "output", offset = 0;
+    busName = "output", offset = 0,
+    inMin = -1, inMax = 1, outMin = -1, outMax = 1,
+    curve = \linlin;
+
     var array, index, count;
-    ~makeConversor.value(synthName, busName, offset);
+
+    ~makeConversor.value(
+        synthName, busName, offset,
+        inMin, inMax, outMin, outMax, curve
+    );
 
     array = [
         receiver.asSymbol, address.asString, synthName.asSymbol,
