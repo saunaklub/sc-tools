@@ -1,6 +1,6 @@
 SynthDef(\a2k, {
     arg input, output;
-    Out.ar(output, A2K.kr(In.ar(input)));
+    Out.kr(output, A2K.kr(In.ar(input)));
 }).add;
 
 SynthDef(\envelopeFollower,{
@@ -24,13 +24,13 @@ SynthDef(\lmhEnvFollower, {
     sig = In.ar(input);
 
     low = LPF.ar(sig, lowFreq);
-    mid = BPF.ar(sig, midiFreq, rq);
+    mid = BPF.ar(sig, midFreq, rq);
     high = HPF.ar(sig, highFreq);
     low = PeakFollower.kr(low, decay);
     mid = PeakFollower.kr(mid, decay);
     high = PeakFollower.kr(high, decay);
 
-    Out.ar(output, [low, mid, high]);
+    Out.kr(output, [low, mid, high]);
 }).add;
 
 SynthDef(\pitchDetection, {
@@ -38,7 +38,7 @@ SynthDef(\pitchDetection, {
     var sig = In.ar(input);
     sig = Pitch.kr(sig);
     SendTrig.kr(sig[1], 0, sig[0]);
-}).add
+}).add;
 
 SynthDef(\scale, {
     arg input, output, minIn = 0, maxIn = 1, 
