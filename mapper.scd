@@ -1,70 +1,104 @@
 // this file intends to send OSC messages to other applications
+"functions.scd".loadRelative;
+"analysis.scd".loadRelative;
 
 ~receivers = ~receiver ? IdentityDictionary();
-~messagesToSend = ~messagesToSend ? Array();
+~conversors = ~conversors ? IdentityDictionary();
+~valuesToSend = ~valuesToSend ? Array();
 ~rate =  ~rate ? (1/60);
 
-CmdPeriod.add(~receivers);
-CmdPeriod.add(~messagesToSend);
+~clearMappers  = {
+    ~receivers = IdentityDictionary();
+    ~conversors = IdentityDictionary();
+    ~valuesToSend = Array();
+};
+
+CmdPeriod.add(~clearMappers);
 
 ~makeReceiver = {
    arg name, ip = "localhost", port = 6666; 
-   if(~receivers.includesKey(name.asSymbol) == false, {
-       ~receivers = ~receivers.add(name.asSymbol, NetAddr(ip.asString, port));
+   if(~receivers.includesKey(name) == false, {
+       ~receivers.put(name.asSymbol, NetAddr(ip.asString, port));
    }, {
        "Receiver already exists!"
    });
 };
 
-~getBusValue = {
+~addValue = {
+    arg receiver, address, synthName,
+    busName = "output", offset = 0;
+    var array, index, count;
+    ~makeConversor.value(synthName, busName, offset);
 
-};
+    array = [
+        receiver.asSymbol, address.asString, synthName.asSymbol,
+        busName.asSymbol, offset
+    ];
 
-~sendMessage = {
-    arg receiver, address, message;
+    count = 0;
 
-    ~receivers[receiver.asSymbol].sendMsg(address.asString, message);
-};
-
-~addMessage = {
-    arg receiver, address, message, arguments;
-    var array = [receiver.asSymbol, address.asString, message, arguments.asArray];
-
-    if(~messagesToSend.indexOf(array) == nil, {
-        ~messagesToSend = ~messagesToSend.add(array);
+    ~valuesToSend.do{
+        arg item;
+        if(item == array, {
+            count = count + 1;
+        });
+    };
+    if (count == 0, {
+        ~valuesToSend = ~valuesToSend.add(array);
     }, {
         "Message already exists!"
     });
 };
 
-~sendMessages = Task({
-    loop{
-        ~messagesToSend.do({
-            arg item;
-            ~sendMessage.value(item);
-            if(item[2].isFunction, {
-                ~sendMessage.value(item[0], item[1], item[2].value(item[3]));
+~removeValue = {
+    arg receiver, address, synthName,
+    busName = "output", offset = 0;
+    var name, array;
 
-            }, ~sendMessage.value(item));
-            
+    name = synthName ++ busName;
+
+    array = [
+        receiver.asSymbol, address.asString, synthName.asSymbol,
+        busName.asSymbol, offset;
+    ];
+
+    ~valuesToSend.do{
+        arg item, i;
+        if (item == array) {
+            ~valuesToSend.takeAt(i);
+            ~conversors[name.asSymbol].free;
+            ~conversors.put(name.asSymbol, nil);
+            ~controlBus[name.asSymbol].free;
+            ~controlBus.put(name.asSymbol, nil);
+        };
+    };
+};
+
+~sendValue = {
+    arg receiver, address,
+    synthName, busName = "output", offset;
+    var return, name;
+
+    name = synthName ++ busName;
+
+    if(~controlBus[name.asSymbol] != nil) {
+        ~controlBus[name.asSymbol].get({
+            arg val;
+            ~receivers[receiver.asSymbol].sendMsg(address, val);
+        });
+    };
+};
+
+~sendValues = Task({
+    loop{
+        ~valuesToSend.do({
+            arg item;
+            ~sendValue.value(
+                item[0], item[1],
+                item[2], item[3],
+                item[4]
+        );
         });
         ~rate.wait;
     }
 });
-
-~getBusValue = {
-    arg synthName, busName = "output", offset;
-    var value, name;
-    name = synthName ++ busName;
-    if(~bus[name.asSymbol] != nil) {
-        var subBus = ~bus[name.asSymbol].subBus(offset, 1);
-        subBus.get({
-            arg val;
-            value = val;
-        })
-    };
-};
-
-//~addFunctionMessage = {
-//    ~addMessage
-//};

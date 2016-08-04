@@ -4,13 +4,19 @@ if(~synth == nil, ~synth = IdentityDictionary());
 if(~cable == nil, ~cable = IdentityDictionary());
 if(~buffer == nil, ~buffer = IdentityDictionary());
 if(~bus == nil, ~bus = IdentityDictionary());
+if(~controlBus == nil, ~controlBus = IdentityDictionary());
 if(~group == nil, ~group = IdentityDictionary());
 
-CmdPeriod.add(~synth);
-CmdPeriod.add(~cable);
-CmdPeriod.add(~buffer);
-CmdPeriod.add(~bus);
-CmdPeriod.add(~group);
+~clearUtilityDictionaries = {
+    ~synth = IdentityDictionary();
+    ~cable = IdentityDictionary();
+    ~buffer = IdentityDictionary();
+    ~bus = IdentityDictionary();
+    ~controlBus = IdentityDictionary();
+    ~group = IdentityDictionary();
+};
+
+CmdPeriod.add(~clearUtilityDictionaries);
 
 ~makeCableDef = {
     arg numChannels = 1;
@@ -58,14 +64,22 @@ CmdPeriod.add(~group);
 )};
 
 ~makeBus = {
-    arg name, numChannels;
-    if (numChannels > 0) {
+    arg name, numChannels, rate = \audio;
+    
+    if (rate == \audio, {
         if (~bus[name.asSymbol] == nil, {
-            ~bus.put(name.asSymbol, Bus.audio(s, numChannels));
+            ~bus.put(name.asSymbol, Bus.audio(s, max(numChannels,1)));
         }, {
             "Bus already exits!"
         });
-    }
+    }, {
+
+        if (~controlBus[name.asSymbol] == nil, {
+            ~controlBus.put(name.asSymbol, Bus.control(s, max(numChannels,1)));
+        }, {
+            "Bus already exits!"
+        });
+    });
 };
 
 ~makeSynth = {
@@ -115,6 +129,24 @@ CmdPeriod.add(~group);
         var busName = name ++ item.asSymbol;
         ~bus.put(busName.asSymbol, Bus.audio(s, 1));
     }
+};
+
+~makeConversor = {
+    arg synthName, busName = \output, offset = 0;
+    var name = synthName ++ busName;
+    
+    if (~conversors[name.asSymbol] == nil, {
+        ~makeBus.value(name, 1, \control);
+
+        ~conversors.put(name.asSymbol, Synth(\a2k,
+            [
+                \input, ~bus[name.asSymbol].subBus(offset, 1),
+                \output, ~controlBus[name.asSymbol]
+            ],
+            target: ~synth[synthName.asSymbol], addAction: \addAfter
+        ));
+    },
+    {"Conversor already exists!";});
 };
 
 ~makeCable = {
@@ -197,6 +229,7 @@ CmdPeriod.add(~group);
     ~cable[cableName.asSymbol].free;
     ~cable.put(cableName.asSymbol, nil);
 };
+
 ~checkConnection = {
     arg input, output;
     var cablename;
@@ -211,8 +244,8 @@ CmdPeriod.add(~group);
     });
     cablename = input.asSymbol ++ "->" ++ output.asSymbol;
 
-    if(~synth.at(cablename.asSymbol) != nil) {
-        ~synth.at(cablename.asSymbol).getn(0, 2, {
+    if(~cable.at(cablename.asSymbol) != nil) {
+        ~cable.at(cablename.asSymbol).getn(0, 2, {
             arg i;
             (input.asString ++ "->" ++ output.asString ++ " is connecting " ++
                 i[0].asString ++ " to " ++ i[1].asString).postln;

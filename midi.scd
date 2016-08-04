@@ -1,41 +1,55 @@
-p = "/Users/claudiocabral/SuperCollider/"
-(p++"SynthMap.scd").load;
-
-if (~midiBus == nil) {~midiBus = Array.fill(128,Bus.control(s,1))};
-
-if (~midi == nil) {~midi = ()};
-
-Environment.push(~midi);
-
-currentEnvironment
-~ccmap = Array.newClear(127);
-
-~map = {
-    arg cc, synthkey, minval, maxval;
-    ~midi.ccmap[cc.asInteger] = [synthkey.asSymbol, minval, maxval];
-};
-
-Environment.pop;
-~midi.map.value(1,\banana,0,0)
 MIDIIn.connectAll;
-// MIDIClient.restart
+MIDIClient.init
+
 MIDIdef.cc(\midiCC,{
-    // arg val, cc, chan;
-    [val/127,cc,chan].postln;
-    ~midiBus[cc].set(val/127);
-});
-
-MIDIdef.noteOn(\noteIn, {
-    arg vel = 0, nn = 0;
-    // [nn,channel].postln;
-    // ~midiKeyboard[nn] =Synth(\FM, [\freq, nn.midicps]);
-});
+     arg val, cc, chan;
+    [val,cc,chan].postln;
+}).free;
 
 
-MIDIdef.noteOff(\noteIn, {
-    arg nn = 0, channel = 0;
-    //[nn,channel].postln;
+MIDIdef.cc(\nano1,{
+    arg val;
+    Ndef(\play).set(\bitMask, val.linlin(0, 127, 0, 2 ** 14));
+}, 0);
 
-    ~midiKeyboard[nn].set(\gate,0);
-    ~midiKeyboard[nn] = nil;
-});
+MIDIdef.cc(\nano2,{
+    arg val;
+    Ndef(\play).set(\rate, val + 1);
+}, 1);
+
+MIDIdef.cc(\nano3,{
+    arg val;
+    Ndef(\play).set(\bitshiftL, val.linlin(0,127, 0, 16));
+}, 2);
+
+MIDIdef.cc(\nano4,{
+    arg val;
+    Ndef(\play).set(\bitshiftR, val.linlin(0,127, 0, 16));
+}, 3);
+
+MIDIOut
+
+OSCdef(\receiveTrig, {
+    arg msg, time;
+    ~drums.midiClock;
+},'/tr', s.addr);
+)
+
+~drums =  MIDIOut.newByName("Pro40", "MIDI");
+
+~drums.start
+
+Pdef(\midiClock, 
+    Pbind(
+        \type, \midi,
+        \midiCmd, \midiClock,
+        \dur, 1/24,
+        \midiout, ~drums
+    )
+).quant_(4);
+
+Quarks.gui
+
+Pdef(\midiClock).play
+
+m = MIDIClockOut.new
